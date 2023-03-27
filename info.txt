@@ -1,3 +1,51 @@
 TODO: 
 - dial between extensions
 - join call
+
+
+based on my main.go. create package function where you will add functionality of making a call between two extensions.
+Examples:
+
+“dial 100 101” will initiate a call between these two endpoints. Once one of these endpoints hangs up, the call ends.
+NOTE: use the latest updates od github.com/abourget/ari package
+main.go
+
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/abourget/ari"
+	"github.com/peksinsara/ari/functions"
+)
+
+func main() {
+	client := ari.NewClient("adminari", "1234", "localhost", 8088, "myari")
+
+	for {
+		fmt.Println("Choose an option:")
+		fmt.Println("1. Dial")
+		fmt.Println("2. Join")
+		fmt.Println("3. List")
+		fmt.Println("4. Exit")
+
+		var choice int
+		fmt.Scanln(&choice)
+
+		switch choice {
+		case 1:
+			fmt.Println("Functionality not implemented")
+		case 2:
+			fmt.Println("Functionality not implemented")
+		case 3:
+			if err := functions.ListOngoingCalls(client); err != nil {
+				log.Fatal(err)
+			}
+		case 4:
+			return
+		default:
+			fmt.Println("Invalid choice")
+		}
+	}
+}

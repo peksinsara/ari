@@ -1,0 +1,66 @@
+//extension.conf
+[public]
+exten => 1000,1,Dial(SIP/1000)
+exten => 1001,1,Dial(SIP/1001)
+exten => 1002,1,Dial(SIP/1002)
+
+exten => 1000,1,NoOp()
+       same => n,Answer()
+       same => n,Stasis(myari)
+       same => n,Hangup()
+
+exten => 1001,1,NoOp()
+       same => n,Answer()
+       same => n,Stasis(myari)
+       same => n,Hangup()
+
+
+
+
+
+//sip.conf
+[general]
+context=public
+
+[1000]
+type=friend
+host=dynamic
+secret=1234
+context=public
+qualify=yes
+
+[1001]
+type=friend
+host=dynamic
+secret=1234
+context=public
+qualify=yes
+
+[1002]
+type=friend
+host=dynamic
+secret=1234
+context=public
+qualify=yes
+
+//ari.conf
+[general]
+enabled = yes
+pretty = yes
+
+[adminari]
+type = user
+read_only = no
+password = 1234
+
+
+//http.conf
+[general]
+enabled = yes
+bindaddr = 0.0.0.0
+
+
+wscat -c "ws://localhost:8088/ari/events?api_key=adminari:1234&app=myari"
+
+//check if module ari is loaded
+module show like res_ari.so
