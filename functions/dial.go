@@ -4,13 +4,12 @@ import (
 	"github.com/abourget/ari"
 )
 
-func DialEndpoint(client *ari.Client, endpoint1 string, ext1 string, endpoint2 string, ext2 string, callerID1 string, callerID2 string, direction string) error {
+func DialEndpoint(client *ari.Client, endpoint1 string, ext1 string, endpoint2 string, ext2 string, direction string) error {
 	params1 := ari.OriginateParams{
 		Endpoint:  endpoint1,
 		Context:   "public",
 		Extension: ext1,
 		App:       "myari",
-		CallerID:  callerID2,
 	}
 
 	params2 := ari.OriginateParams{
@@ -18,7 +17,6 @@ func DialEndpoint(client *ari.Client, endpoint1 string, ext1 string, endpoint2 s
 		Context:   "public",
 		Extension: ext2,
 		App:       "myari",
-		CallerID:  callerID2,
 	}
 
 	channel1, err := client.Channels.Create(params1)

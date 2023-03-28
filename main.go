@@ -49,7 +49,7 @@ func main() {
 			endpoint1 := "SIP/" + extensions[0]
 			endpoint2 := "SIP/" + extensions[1]
 
-			err := functions.DialEndpoint(client, endpoint1, extensions[0], endpoint2, extensions[1], extensions[0], extensions[1], "outgoing")
+			err := functions.DialEndpoint(client, endpoint1, extensions[0], endpoint2, extensions[1], "outgoing")
 			if err != nil {
 				log.Fatal(err)
 			}
