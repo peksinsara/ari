@@ -19,6 +19,12 @@ exten => 1002,1,NoOp()
        same => n,Stasis(myari)
        same => n,Hangup()
 
+[myari]
+exten => _X.,1,Answer()
+   same => n,NoOp(ARI Sample)
+   same => n,Stasis(${EXTEN})
+   same => n,Hangup()
+
 
 //ari.conf
 [general]
@@ -29,9 +35,6 @@ pretty = yes
 type = user
 read_only = no
 password = 1234
-
-[myari]
-type = application
 
 
 //http.conf
@@ -49,5 +52,8 @@ load => res_ari_applications.so
 
 wscat -c "ws://localhost:8088/ari/events?api_key=adminari:1234&app=myari"
 wscat --connect 'ws://localhost:8088/ari/events?app=myari&api_key=adminari:1234'
+
 module load res_ari.so
 module show like res_ari
+
+ERROR[2262]: config_options.c:528 process_category: Could not find config type for category 'myari' in 'ari.conf'

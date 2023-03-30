@@ -37,19 +37,21 @@ func main() {
 		switch choice {
 		case 1:
 			reader := bufio.NewReader(os.Stdin)
-			fmt.Println("Enter two extensions separated by space (example 1000 1001):")
+			fmt.Println("Enter extensions separated by space (example 1000 1001 or 1000 1002 1003):")
 			input, _ := reader.ReadString('\n')
 			extensions := strings.Fields(input)
 
-			if len(extensions) != 2 {
-				fmt.Println("Invalid input, please enter two extensions separated by space.")
+			if len(extensions) < 2 {
+				fmt.Println("Invalid input, please enter at least two extensions separated by space.")
 				continue
 			}
 
-			endpoint1 := "SIP/" + extensions[0]
-			endpoint2 := "SIP/" + extensions[1]
+			var endpoints []string
+			for _, ext := range extensions {
+				endpoints = append(endpoints, "SIP/"+ext)
+			}
 
-			err := functions.DialEndpoint(client, endpoint1, extensions[0], endpoint2, extensions[1], "outgoing")
+			err := functions.DialEndpoint(client, endpoints, extensions, "outgoing")
 			if err != nil {
 				log.Fatal(err)
 			}
