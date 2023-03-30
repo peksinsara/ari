@@ -7,14 +7,24 @@ import (
 )
 
 func ListOngoingCalls(client *ari.Client) error {
-	calls, err := client.Channels.List()
+	bridges, err := client.Bridges.List()
 	if err != nil {
 		return err
 	}
 
 	fmt.Println("Ongoing Calls:")
-	for _, call := range calls {
-		fmt.Printf("Call ID: %s, Participants: %s\n", call.ID, call.Name)
+	for _, bridge := range bridges {
+		if bridge.BridgeType == "mixing" && len(bridge.Channels) > 0 {
+			fmt.Printf("Call ID: %s, Participants: ", bridge.ID)
+			for _, channelID := range bridge.Channels {
+				channel, err := client.Channels.Get(channelID)
+				if err != nil {
+					return fmt.Errorf("error getting channel %s: %s", channelID, err)
+				}
+				fmt.Printf("%s ", channel.Name)
+			}
+			fmt.Println()
+		}
 	}
 	return nil
 }

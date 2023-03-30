@@ -8,32 +8,47 @@ import (
 	"github.com/abourget/ari"
 )
 
-func DialEndpoint(client *ari.Client, endpoints []string, extensions []string, direction string) error {
-	var channels []*ari.Channel
+func DialEndpoint(client *ari.Client, callerEndpoint string, calleeEndpoint string) error {
+	callerParams := ari.OriginateParams{
+		Endpoint:  callerEndpoint,
+		Context:   "public",
+		Extension: "s",
+		App:       "myari",
+	}
 
-	for i, endpoint := range endpoints {
-		params := ari.OriginateParams{
-			Endpoint:  endpoint,
-			Context:   "public",
-			Extension: extensions[i],
-			App:       "myari",
-		}
+	callerChannel, err := client.Channels.Create(callerParams)
+	if err != nil {
+		return fmt.Errorf("error creating channel for caller %s: %s", callerEndpoint, err)
+	}
+	log.Printf("Created channel %s for caller %s", callerChannel.ID, callerEndpoint)
 
-		channel, err := client.Channels.Create(params)
+	for callerChannel.State != "Up" {
+		time.Sleep(time.Millisecond * 100)
+		callerChannel, err = client.Channels.Get(callerChannel.ID)
 		if err != nil {
-			return fmt.Errorf("error creating channel for endpoint %s: %s", endpoint, err)
+			return fmt.Errorf("error getting channel %s: %s", callerChannel.ID, err)
 		}
-		log.Printf("Created channel %s for endpoint %s with extension %s", channel.ID, endpoint, extensions[i])
+	}
 
-		for channel.State != "Up" {
-			time.Sleep(time.Millisecond * 100)
-			channel, err = client.Channels.Get(channel.ID)
-			if err != nil {
-				return fmt.Errorf("error getting channel %s: %s", channel.ID, err)
-			}
+	calleeParams := ari.OriginateParams{
+		Endpoint:  calleeEndpoint,
+		Context:   "public",
+		Extension: "s",
+		App:       "myari",
+	}
+
+	calleeChannel, err := client.Channels.Create(calleeParams)
+	if err != nil {
+		return fmt.Errorf("error creating channel for callee %s: %s", calleeEndpoint, err)
+	}
+	log.Printf("Created channel %s for callee %s", calleeChannel.ID, calleeEndpoint)
+
+	for calleeChannel.State != "Up" {
+		time.Sleep(time.Millisecond * 100)
+		calleeChannel, err = client.Channels.Get(calleeChannel.ID)
+		if err != nil {
+			return fmt.Errorf("error getting channel %s: %s", calleeChannel.ID, err)
 		}
-
-		channels = append(channels, channel)
 	}
 
 	bridgeParams := ari.CreateBridgeParams{
@@ -47,12 +62,15 @@ func DialEndpoint(client *ari.Client, endpoints []string, extensions []string, d
 	}
 	log.Printf("Created bridge %s", bridge.ID)
 
-	for _, channel := range channels {
-		if err := bridge.AddChannel(channel.ID, ari.Participant); err != nil {
-			return fmt.Errorf("error adding channel %s to bridge: %s", channel.ID, err)
-		}
-		log.Printf("Added channel %s to bridge %s", channel.ID, bridge.ID)
+	if err := bridge.AddChannel(callerChannel.ID, ari.Participant); err != nil {
+		return fmt.Errorf("error adding caller channel %s to bridge: %s", callerChannel.ID, err)
 	}
+	log.Printf("Added caller channel %s to bridge %s", callerChannel.ID, bridge.ID)
+
+	if err := bridge.AddChannel(calleeChannel.ID, ari.Participant); err != nil {
+		return fmt.Errorf("error adding callee channel %s to bridge: %s", calleeChannel.ID, err)
+	}
+	log.Printf("Added callee channel %s to bridge %s", calleeChannel.ID, bridge.ID)
 
 	return nil
 }

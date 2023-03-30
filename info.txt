@@ -56,4 +56,3 @@ wscat --connect 'ws://localhost:8088/ari/events?app=myari&api_key=adminari:1234'
 module load res_ari.so
 module show like res_ari
 
-ERROR[2262]: config_options.c:528 process_category: Could not find config type for category 'myari' in 'ari.conf'

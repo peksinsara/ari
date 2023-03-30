@@ -39,23 +39,22 @@ func main() {
 			reader := bufio.NewReader(os.Stdin)
 			fmt.Println("Enter extensions separated by space (example 1000 1001 or 1000 1002 1003):")
 			input, _ := reader.ReadString('\n')
-			extensions := strings.Fields(input)
+			endpoints := strings.Fields(input)
 
-			if len(extensions) < 2 {
-				fmt.Println("Invalid input, please enter at least two extensions separated by space.")
-				continue
+			if len(endpoints) < 2 {
+				fmt.Println("Invalid input, please enter at least two endpoints separated by a space.")
+				return
 			}
 
-			var endpoints []string
-			for _, ext := range extensions {
-				endpoints = append(endpoints, "SIP/"+ext)
+			var channels []string
+			for _, endpoint := range endpoints {
+				channels = append(channels, "SIP/"+strings.TrimSpace(endpoint))
 			}
 
-			err := functions.DialEndpoint(client, endpoints, extensions, "outgoing")
+			err = functions.DialEndpoint(client, channels[0], channels[1])
 			if err != nil {
 				log.Fatal(err)
 			}
-
 		case 2:
 			fmt.Println("Functionality not implemented")
 		case 3:
