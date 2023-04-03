@@ -1,9 +1,4 @@
 //extensions.conf
-exten => 2000,1,Answer()
-       same => n,NoOp(ARI Sample)
-       same => n,Stasis(myari)
-       same => n,Hangup()
-
 exten => 1000,1,NoOp()
        same => n,Answer()
        same => n,Stasis(myari)

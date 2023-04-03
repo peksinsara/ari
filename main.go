@@ -7,21 +7,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/abourget/ari"
 	"github.com/peksinsara/ari/functions"
+	"github.com/peksinsara/ari/server"
 )
 
 func main() {
-	client := ari.NewClient("adminari", "1234", "localhost", 8088, "myari")
-
-	applications, err := client.Applications.List()
+	client, err := server.ConnectToARI("adminari", "1234", "localhost", 8088, "myari")
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	fmt.Println("Available ARI applications:")
-	for _, app := range applications {
-		fmt.Println("-", app.Name)
 	}
 
 	for {
@@ -46,15 +39,23 @@ func main() {
 				return
 			}
 
-			var channels []string
-			for _, endpoint := range endpoints {
-				channels = append(channels, "SIP/"+strings.TrimSpace(endpoint))
+			if len(endpoints) == 2 {
+				err = functions.DialEndpoint(client, "SIP/"+strings.TrimSpace(endpoints[0]), "SIP/"+strings.TrimSpace(endpoints[1]))
+				if err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				var channels []string
+				for _, endpoint := range endpoints {
+					channels = append(channels, "SIP/"+strings.TrimSpace(endpoint))
+				}
+
+				err = functions.DialConference(client, channels)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 
-			err = functions.DialEndpoint(client, channels[0], channels[1])
-			if err != nil {
-				log.Fatal(err)
-			}
 		case 2:
 			fmt.Println("Functionality not implemented")
 		case 3:
