@@ -50,4 +50,3 @@ wscat --connect 'ws://localhost:8088/ari/events?app=myari&api_key=adminari:1234'
 
 module load res_ari.so
 module show like res_ari
-
