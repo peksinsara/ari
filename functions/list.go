@@ -16,7 +16,7 @@ func ListOngoingCalls(client *ari.Client) error {
 	fmt.Println("Ongoing Calls:")
 
 	for _, bridge := range bridges {
-		if bridge.BridgeType == "mixing" && len(bridge.Channels) > 0 {
+		if bridge.BridgeType == "mixing" && len(bridge.Channels) > 1 {
 			fmt.Printf("Call ID: %s, Participants: ", bridge.ID)
 
 			for _, channelID := range bridge.Channels {

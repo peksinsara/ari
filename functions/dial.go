@@ -8,39 +8,40 @@ import (
 	"github.com/abourget/ari"
 )
 
+var bridgeType = make(map[string]string)
+
 func DialEndpoints(client *ari.Client, endpoints []string) error {
-	bridgeParams := ari.CreateBridgeParams{
-		Type: "mixing",
-		Name: "myBridge",
+
+	var bridgeParams ari.CreateBridgeParams
+
+	if len(endpoints) == 2 {
+		bridgeParams = ari.CreateBridgeParams{
+			Type: "mixing",
+			Name: "myBridge",
+		}
+		bridgeType[bridgeParams.Name] = "call"
+	} else {
+		bridgeParams = ari.CreateBridgeParams{
+			Type: "mixing",
+			Name: "myBridge",
+		}
+		bridgeType[bridgeParams.Name] = "conference"
 	}
 
 	bridge, err := client.Bridges.Create(bridgeParams)
 	if err != nil {
 		return fmt.Errorf("error creating bridge: %s", err)
 	}
-	log.Printf("Created bridge %s", bridge.ID)
+
+	log.Printf("Created %s bridge %s", bridgeType[bridgeParams.Name], bridge.ID)
+
+	bridgeType[bridge.ID] = bridgeType[bridgeParams.Name]
 
 	var channels []*ari.Channel
 	for _, endpoint := range endpoints {
-		channelParams := ari.OriginateParams{
-			Endpoint:  endpoint,
-			Context:   "public",
-			Extension: "s",
-			App:       "myari",
-		}
-
-		channel, err := client.Channels.Create(channelParams)
+		channel, err := CreateChannel(client, endpoint)
 		if err != nil {
 			return fmt.Errorf("error creating channel for endpoint %s: %s", endpoint, err)
-		}
-		log.Printf("Created channel %s for endpoint %s", channel.ID, endpoint)
-
-		for channel.State != "Up" {
-			time.Sleep(time.Millisecond * 100)
-			channel, err = client.Channels.Get(channel.ID)
-			if err != nil {
-				return fmt.Errorf("error getting channel %s: %s", channel.ID, err)
-			}
 		}
 
 		channels = append(channels, channel)
@@ -49,12 +50,7 @@ func DialEndpoints(client *ari.Client, endpoints []string) error {
 			return fmt.Errorf("error adding channel %s to bridge: %s", channel.ID, err)
 		}
 		log.Printf("Added channel %s to bridge %s", channel.ID, bridge.ID)
-	}
 
-	if len(channels) == 2 {
-		log.Printf("Started call %s, Participants: %s, %s", bridge.ID, endpoints[0], endpoints[1])
-	} else {
-		log.Printf("Started conference %s with %d participant(s)", bridge.ID, len(channels))
 	}
 
 	go func() {
@@ -66,12 +62,20 @@ func DialEndpoints(client *ari.Client, endpoints []string) error {
 			}
 
 			if bridge.BridgeClass == "destroyed" {
-				log.Printf("Conference %s ended", bridge.ID)
+				log.Printf("%s %s ended", bridgeType[bridge.ID], bridge.ID)
 				break
 			}
 
 			if len(bridge.Channels) == 0 {
-				log.Printf("All participants have left %s, ending", bridge.ID)
+				log.Printf("All participants have left %s %s", bridgeType[bridge.ID], bridge.ID)
+				if err := bridge.Destroy(); err != nil {
+					log.Printf("error destroying bridge %s: %s", bridge.ID, err)
+				}
+				break
+			}
+
+			if bridgeType[bridge.ID] == "call" && len(bridge.Channels) == 1 {
+				log.Printf("Only one channel left in %s %s. Destroying bridge.", bridgeType[bridge.ID], bridge.ID)
 				if err := bridge.Destroy(); err != nil {
 					log.Printf("error destroying bridge %s: %s", bridge.ID, err)
 				}
@@ -83,4 +87,29 @@ func DialEndpoints(client *ari.Client, endpoints []string) error {
 	}()
 
 	return nil
+}
+
+func CreateChannel(client *ari.Client, endpoint string) (*ari.Channel, error) {
+	channelParams := ari.OriginateParams{
+		Endpoint:  endpoint,
+		Context:   "public",
+		Extension: "s",
+		App:       "myari",
+	}
+
+	channel, err := client.Channels.Create(channelParams)
+	if err != nil {
+		return nil, fmt.Errorf("error creating channel for endpoint %s: %s", endpoint, err)
+	}
+	log.Printf("Created channel %s for endpoint %s", channel.ID, endpoint)
+
+	for channel.State != "Up" {
+		time.Sleep(time.Millisecond * 100)
+		channel, err = client.Channels.Get(channel.ID)
+		if err != nil {
+			return nil, fmt.Errorf("error getting channel %s: %s", channel.ID, err)
+		}
+	}
+
+	return channel, nil
 }

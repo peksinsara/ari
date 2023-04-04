@@ -2,8 +2,6 @@ package functions
 
 import (
 	"fmt"
-	"log"
-	"time"
 
 	"github.com/abourget/ari"
 )
@@ -16,30 +14,20 @@ func JoinCall(client *ari.Client, callID string, endpointIDs []string) error {
 	}
 
 	for _, endpointID := range endpointIDs {
-		channelParams := ari.OriginateParams{
-			Endpoint:  endpointID,
-			Context:   "public",
-			Extension: "s",
-			App:       "myari",
-		}
-
-		channel, err := client.Channels.Create(channelParams)
+		channel, err := CreateChannel(client, endpointID)
 		if err != nil {
-			return fmt.Errorf("error creating channel for endpoint %s: %s", endpointID, err)
-		}
-		log.Printf("Created channel %s for endpoint %s", channel.ID, endpointID)
-
-		for channel.State != "Up" {
-			time.Sleep(time.Millisecond * 100)
-			channel, err = client.Channels.Get(channel.ID)
-			if err != nil {
-				return fmt.Errorf("error getting channel %s: %s", channel.ID, err)
-			}
+			return fmt.Errorf("failed to create channel for endpoint %s: %s", endpointID, err)
 		}
 
 		if err := bridge.AddChannel(channel.ID, ari.Participant); err != nil {
-			return fmt.Errorf("error adding channel %s to bridge %s: %s", channel.ID, callID, err)
+			return fmt.Errorf("failed to add channel %s to bridge %s: %s", channel.ID, callID, err)
 		}
+
+	}
+	if len(bridge.Channels) >= 2 {
+		fmt.Println("Chaning 'call' to 'conference'. ")
+		bridgeType[bridge.ID] = "conference"
+
 	}
 
 	return nil
