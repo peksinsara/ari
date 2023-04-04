@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/abourget/ari"
 	"github.com/peksinsara/ari/functions"
 	"github.com/peksinsara/ari/server"
 )
@@ -16,6 +17,36 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	eventCh := client.LaunchListener()
+	go func() {
+		for {
+			event := <-eventCh
+			switch event.GetType() {
+			case "ChannelLeftBridge":
+				if bridgeEvent, ok := event.(*ari.ChannelLeftBridge); ok {
+					go functions.DestroyBridge(client, bridgeEvent.Bridge)
+				} else {
+					fmt.Println("error in event")
+				}
+			default:
+			}
+		}
+	}()
+
+	// eventCh := client.LaunchListener()
+	// go func() {
+	// 	for {
+	// 		event := <-eventCh
+	// 		switch event := event.(type) {
+	// 		//Gettype, returns string
+	// 		case *ari.ChannelLeftBridge:
+	// 			//log.Printf("Received ChannelLeftBridge event: %+v\n", event)
+	// 			go functions.DestroyBridge(client, event.Bridge, functions.BridgeType[event.Bridge.ID])
+	// 		default:
+	// 		}
+	// 	}
+	// }()
 
 	for {
 		fmt.Println("Choose an option:")

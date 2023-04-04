@@ -25,8 +25,8 @@ func JoinCall(client *ari.Client, callID string, endpointIDs []string) error {
 
 	}
 	if len(bridge.Channels) >= 2 {
-		fmt.Println("Chaning 'call' to 'conference'. ")
-		bridgeType[bridge.ID] = "conference"
+		fmt.Println("Changing 'call' to 'conference'. ")
+		BridgeType[bridge.ID] = "conference"
 
 	}
 

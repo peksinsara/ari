@@ -8,7 +8,7 @@ import (
 	"github.com/abourget/ari"
 )
 
-var bridgeType = make(map[string]string)
+var BridgeType = make(map[string]string)
 
 func DialEndpoints(client *ari.Client, endpoints []string) error {
 
@@ -19,13 +19,13 @@ func DialEndpoints(client *ari.Client, endpoints []string) error {
 			Type: "mixing",
 			Name: "myBridge",
 		}
-		bridgeType[bridgeParams.Name] = "call"
+		BridgeType[bridgeParams.Name] = "call"
 	} else {
 		bridgeParams = ari.CreateBridgeParams{
 			Type: "mixing",
 			Name: "myBridge",
 		}
-		bridgeType[bridgeParams.Name] = "conference"
+		BridgeType[bridgeParams.Name] = "conference"
 	}
 
 	bridge, err := client.Bridges.Create(bridgeParams)
@@ -33,9 +33,9 @@ func DialEndpoints(client *ari.Client, endpoints []string) error {
 		return fmt.Errorf("error creating bridge: %s", err)
 	}
 
-	log.Printf("Created %s bridge %s", bridgeType[bridgeParams.Name], bridge.ID)
+	log.Printf("Created %s bridge %s", BridgeType[bridgeParams.Name], bridge.ID)
 
-	bridgeType[bridge.ID] = bridgeType[bridgeParams.Name]
+	BridgeType[bridge.ID] = BridgeType[bridgeParams.Name]
 
 	var channels []*ari.Channel
 	for _, endpoint := range endpoints {
@@ -57,36 +57,39 @@ func DialEndpoints(client *ari.Client, endpoints []string) error {
 		for {
 			bridge, err = client.Bridges.Get(bridge.ID)
 			if err != nil {
-				log.Printf("error getting bridge %s: %s", bridge.ID, err)
+				//log.Printf("error getting bridge %s: %s", bridge.ID, err)
 				break
 			}
 
-			if bridge.BridgeClass == "destroyed" {
-				log.Printf("%s %s ended", bridgeType[bridge.ID], bridge.ID)
-				break
-			}
-
-			if len(bridge.Channels) == 0 {
-				log.Printf("All participants have left %s %s", bridgeType[bridge.ID], bridge.ID)
-				if err := bridge.Destroy(); err != nil {
-					log.Printf("error destroying bridge %s: %s", bridge.ID, err)
-				}
-				break
-			}
-
-			if bridgeType[bridge.ID] == "call" && len(bridge.Channels) == 1 {
-				log.Printf("Only one channel left in %s %s. Destroying bridge.", bridgeType[bridge.ID], bridge.ID)
-				if err := bridge.Destroy(); err != nil {
-					log.Printf("error destroying bridge %s: %s", bridge.ID, err)
-				}
-				break
-			}
+			//DestroyBridge(client, bridge, BridgeType[bridge.ID])
 
 			time.Sleep(time.Second)
 		}
 	}()
 
 	return nil
+}
+
+func DestroyBridge(client *ari.Client, bridge *ari.Bridge) {
+	bridgeType, ok := BridgeType[bridge.ID]
+	if !ok {
+		log.Printf("BridgeType for bridge %s not found", bridge.ID)
+		return
+	}
+
+	if bridgeType == "call" && len(bridge.Channels) == 1 {
+		log.Printf("Only one channel left in %s %s. Destroying bridge.", bridgeType, bridge.ID)
+		if err := bridge.Destroy(); err != nil {
+			log.Printf("error destroying bridge %s: %s", bridge.ID, err)
+		}
+	} else if bridge.BridgeClass == "destroyed" {
+		log.Printf("%s %s ended", bridgeType, bridge.ID)
+	} else if bridgeType == "conference" && len(bridge.Channels) == 0 {
+		log.Printf("Zero channels left in %s %s. Destroying bridge.", bridgeType, bridge.ID)
+		if err := bridge.Destroy(); err != nil {
+			log.Printf("error destroying bridge %s: %s", bridge.ID, err)
+		}
+	}
 }
 
 func CreateChannel(client *ari.Client, endpoint string) (*ari.Channel, error) {
